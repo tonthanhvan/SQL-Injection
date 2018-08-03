@@ -9,7 +9,6 @@ import getopt
 import re
 import urllib2
 import json
-import urllib.request
 from sys import argv
 from bs4 import BeautifulSoup
 
